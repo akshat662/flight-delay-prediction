@@ -1,0 +1,30 @@
+# EDA Findings
+
+- **Delay-component availability** (FRAME A + cancelled/diverted total): 533,863 flights (17.8%) have a delay-cause breakdown, 2,379,941 (79.3%) are missing one, 86,196 (2.9%) cancelled/diverted.
+- **Monthly component availability** (FRAME A): peak month for has-components flights is 2023-07 with 17,168 flights.
+- **Arrival punctuality** (FRAME A): 64.6% early, 1.8% on time, 33.6% delayed (median ARR_DELAY across FRAME A is -7 min, i.e. most flights land a bit ahead of schedule). The source report's 10.1% / 1.5% / 88.4% looks inverted/mislabeled the same way the holiday chart was; these correctly-labeled shares are what the raw ARR_DELAY sign distribution actually shows.
+- **Departure vs arrival delay correlation** (FRAME A): Pearson r = 0.965 (source report: > 0.97).
+- **Top 5 airlines, departure delays** (FRAME B): Southwest Airlines Co. highest at 35.5% of the top-5 share (source report: Southwest ~38.6%).
+- **Top 5 airlines, arrival delays** (FRAME B): Southwest Airlines Co. highest at 33.0% of the top-5 share.
+- **Speed vs DEP_DELAY** (FRAME B): among flights with speed > 10, 65.6% have a delay over 60 min, consistent with the source observation that fast flights are rarely heavily delayed.
+- **Speed vs ARR_DELAY** (FRAME B): among flights with speed > 10, 24.2% have a delay over 60 min, consistent with the source observation that fast flights are rarely heavily delayed.
+- **Top 4 origins, departure delays** (FRAME B): DEN worst with 22,483 delayed departures (source report: DEN worst).
+- **Top 4 destinations, arrival delays** (FRAME B): DFW worst with 21,294 delayed arrivals (source report: DFW worst).
+- **Departure delay reasons** (FRAME B): DELAY_DUE_CARRIER highest (265,211), DELAY_DUE_SECURITY lowest (2,590) (source report: carrier highest, late aircraft second, security lowest).
+- **Arrival delay reasons** (FRAME B): DELAY_DUE_CARRIER highest (271,099), DELAY_DUE_SECURITY lowest (2,590) (source report: carrier highest, late aircraft second, security lowest).
+- **Delays by distance bucket** (FRAME B): bucket 1 (shortest) has 141,677 delayed flights vs bucket 5 (longest) with 549, consistent with long-haul flights delaying less often.
+- **Departure delays by year** (FRAME B): lowest in 2020 (32,651 flights) (source report: 2020-2021 lowest, attributed to COVID).
+- **Arrival delays by year** (FRAME B): lowest in 2020 (41,037 flights) (source report: 2020-2021 lowest, attributed to COVID).
+- **Busiest routes** (FRAME B): ORD-LGA busiest with 969 delayed flights (source report: ORD-LGA busiest with 1000+ flights).
+- **Departure delays by time of day** (FRAME B): worst in Evening (137,028 flights) (source report: worst in evening and morning).
+- **Arrival delays by time of day** (FRAME B): worst in Night (155,260 flights) (source report: worst at night and evening).
+- **Departure delays by season** (FRAME B): Summer 33.7%, Fall 17.0% (source report: Summer ~34%, roughly double Fall).
+- **Arrival delays by season** (FRAME B): Summer 32.9%, Fall 17.3% (source report: Summer ~34%, roughly double Fall).
+- **Departure delays: holiday vs non-holiday** (FRAME B): raw counts holiday=13,267 (236.91/day over 56 days) vs non-holiday=414,544 (251.54/day over 1648 days). The source notebook swapped these two labels, which is why it reported ~30x more holiday delays; correctly labeled, non-holiday days have the higher per-day delay rate.
+- **Arrival delays: holiday vs non-holiday** (FRAME B): raw counts holiday=15,164 (270.79/day over 56 days) vs non-holiday=474,664 (288.02/day over 1648 days). The source notebook swapped these two labels, which is why it reported ~30x more holiday delays; correctly labeled, non-holiday days have the higher per-day delay rate.
+- **High taxi-in count by airline** (FRAME B): Southwest Airlines Co. highest with 5,409 flights. (source report: American highest.)
+- **High taxi-out count by airline** (FRAME B): SkyWest Airlines Inc. highest with 12,212 flights. (source report: SkyWest highest.)
+- **Top 5 destinations by high taxi-in count** (FRAME B): ORD highest with 3,638 flights. (source report: ORD worst.)
+- **Top 5 origins by high taxi-out count** (FRAME B): ORD highest with 7,614 flights. (source report: ORD worst.)
+- **Number of nonzero delay components** (FRAME B): 48.2% of flights are delayed for more than one reason simultaneously.
+- **Numeric sample heatmap** (FRAME B): first 10 rows across 26 numeric columns.

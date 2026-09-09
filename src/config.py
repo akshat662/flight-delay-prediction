@@ -36,8 +36,10 @@ class PathsConfig:
     figures_dir: Path
     raw_csv: Path
     cancelled_diverted_monthly: Path
+    flights_nocancel: Path
     clean_parquet: Path
     cleaning_summary_md: Path
+    eda_findings_md: Path
 
 
 @dataclass(frozen=True)
@@ -86,8 +88,10 @@ def load_config(config_path: Path | str = DEFAULT_CONFIG_PATH) -> Config:
         figures_dir=_resolve(repo_root, raw_paths["figures_dir"]),
         raw_csv=_resolve(repo_root, raw_paths["raw_csv"]),
         cancelled_diverted_monthly=_resolve(repo_root, raw_paths["cancelled_diverted_monthly"]),
+        flights_nocancel=_resolve(repo_root, raw_paths["flights_nocancel"]),
         clean_parquet=_resolve(repo_root, raw_paths["clean_parquet"]),
         cleaning_summary_md=_resolve(repo_root, raw_paths["cleaning_summary_md"]),
+        eda_findings_md=_resolve(repo_root, raw_paths["eda_findings_md"]),
     )
 
     config = Config(

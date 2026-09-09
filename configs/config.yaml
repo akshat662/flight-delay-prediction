@@ -18,8 +18,10 @@ paths:
 
   raw_csv: "data/raw/flights_sample_3m.csv"
   cancelled_diverted_monthly: "data/interim/cancelled_diverted_monthly.parquet"
+  flights_nocancel: "data/interim/flights_nocancel.parquet"
   clean_parquet: "data/processed/flights_clean.parquet"
   cleaning_summary_md: "reports/cleaning_summary.md"
+  eda_findings_md: "reports/eda_findings.md"
 
 split:
   test_size: 0.25

@@ -30,6 +30,54 @@ def _log_step(step: str, df: pd.DataFrame) -> None:
     logger.info("[%s] row count: %d", step, len(df))
 
 
+def load_nocancel(
+    config: Config | None = None, force: bool = False, stats: dict | None = None
+) -> pd.DataFrame:
+    """Return the post-cancellation-drop, pre-component-filter frame (steps 1-2).
+
+    Reads the raw CSV, records monthly cancelled/diverted counts to
+    data/interim/cancelled_diverted_monthly.parquet, drops cancelled/diverted
+    rows, and caches the result to data/interim/flights_nocancel.parquet.
+    `clean()` and Phase 2 EDA both build on this frame so the read+drop logic
+    lives in exactly one place.
+    """
+    config = config or load_config()
+    out_path = config.paths.flights_nocancel
+
+    if cached(out_path, force=force):
+        df = load_df(out_path)
+        if stats is not None:
+            stats["n_read"] = None
+            stats["n_after_drop"] = len(df)
+        return df
+
+    logger.info("Reading CSV from %s", config.paths.raw_csv)
+    df = pd.read_csv(config.paths.raw_csv, parse_dates=["FL_DATE"], date_format="%Y-%m-%d")
+    _log_step("1_read_csv", df)
+    n_read = len(df)
+
+    cancelled_or_diverted = (df["CANCELLED"] == 1) | (df["DIVERTED"] == 1)
+    monthly = (
+        df.loc[cancelled_or_diverted]
+        .assign(year_month=df.loc[cancelled_or_diverted, "FL_DATE"].dt.to_period("M").astype(str))
+        .groupby("year_month")
+        .size()
+        .rename("cancelled_diverted_count")
+    )
+    save_df(monthly.reset_index(), config.paths.cancelled_diverted_monthly)
+
+    df = df.loc[~cancelled_or_diverted].copy()
+    _log_step("2_drop_cancelled_diverted", df)
+
+    save_df(df, out_path)
+
+    if stats is not None:
+        stats["n_read"] = n_read
+        stats["n_after_drop"] = len(df)
+
+    return df
+
+
 def split_by_components(
     df: pd.DataFrame, target_cols: list[str]
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -113,26 +161,14 @@ def clean(config: Config | None = None, force: bool = False) -> pd.DataFrame:
     arr_delay_col = config.arrival_delay_col
     summary_lines: list[str] = ["# Cleaning Summary", ""]
 
-    # Step 1: read CSV, parse FL_DATE
-    logger.info("Reading CSV from %s", config.paths.raw_csv)
-    df = pd.read_csv(config.paths.raw_csv, parse_dates=["FL_DATE"], date_format="%Y-%m-%d")
-    _log_step("1_read_csv", df)
-    summary_lines.append(f"1. Read CSV: {len(df)} rows")
-
-    # Step 2: record cancelled/diverted monthly counts, then drop those rows
-    cancelled_or_diverted = (df["CANCELLED"] == 1) | (df["DIVERTED"] == 1)
-    monthly = (
-        df.loc[cancelled_or_diverted]
-        .assign(year_month=df.loc[cancelled_or_diverted, "FL_DATE"].dt.to_period("M").astype(str))
-        .groupby("year_month")
-        .size()
-        .rename("cancelled_diverted_count")
-    )
-    save_df(monthly.reset_index(), config.paths.cancelled_diverted_monthly)
-
-    df = df.loc[~cancelled_or_diverted].copy()
-    _log_step("2_drop_cancelled_diverted", df)
-    summary_lines.append(f"2. Drop cancelled/diverted: {len(df)} rows")
+    # Steps 1-2: read CSV and drop cancelled/diverted rows (shared with EDA's FRAME A)
+    load_stats: dict = {}
+    df = load_nocancel(config, force=force, stats=load_stats)
+    if load_stats.get("n_read") is not None:
+        summary_lines.append(f"1. Read CSV: {load_stats['n_read']} rows")
+    else:
+        summary_lines.append("1. Read CSV: (reused cached nocancel frame)")
+    summary_lines.append(f"2. Drop cancelled/diverted: {load_stats['n_after_drop']} rows")
 
     # Step 3: drop duplicates
     n_before_dedup = len(df)
