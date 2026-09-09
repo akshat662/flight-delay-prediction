@@ -181,7 +181,7 @@ def write_report(
     lines.extend(_format_pca_table(pca_results))
     lines.append("")
 
-    lines.append("## Decisions carried into Phase 4")
+    lines.append("## Decisions carried into feature engineering")
     lines.append("")
     lines.append(
         f"- **Drop `CRS_ELAPSED_TIME`**: redundant with `DISTANCE` "

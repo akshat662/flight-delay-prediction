@@ -25,7 +25,7 @@ paths:
   cleaning_summary_md: "reports/cleaning_summary.md"
   eda_findings_md: "reports/eda_findings.md"
 
-  # Phase 4: label-encoded + Z-scaled X/Y (train/test)
+  # Label-encoded + Z-scaled X/Y (train/test)
   x_train_label: "data/processed/X_train_label.parquet"
   x_test_label: "data/processed/X_test_label.parquet"
   y_train: "data/processed/Y_train.parquet"
@@ -33,37 +33,37 @@ paths:
   arr_delay_y_train: "data/processed/arr_delay_only_y_train.parquet"
   arr_delay_y_test: "data/processed/arr_delay_only_y_test.parquet"
 
-  # Phase 4: one-hot + MinMax-normalized X (train/test)
+  # One-hot + MinMax-normalized X (train/test)
   x_train_onehot_norm: "data/processed/X_train_onehot_norm.parquet"
   x_test_onehot_norm: "data/processed/X_test_onehot_norm.parquet"
 
-  # Phase 4: chronological (shuffle=False) sequence data for LSTM models
+  # Chronological (shuffle=False) sequence data for LSTM models
   x_train_lstm: "data/processed/X_train_lstm.parquet"
   x_test_lstm: "data/processed/X_test_lstm.parquet"
   y_train_lstm: "data/processed/Y_train_lstm.parquet"
   y_test_lstm: "data/processed/Y_test_lstm.parquet"
 
-  # Phase 4: fitted encoders/scalers
+  # Fitted encoders/scalers
   airline_encoder: "models/preprocessors/airline_encoder.joblib"
   airport_encoder: "models/preprocessors/airport_encoder.joblib"
   standard_scaler: "models/preprocessors/standard_scaler.joblib"
   minmax_scaler: "models/preprocessors/minmax_scaler.joblib"
 
-  # Phase 5: baseline models and metrics
+  # Baseline models and metrics (XGBoost, ANN)
   xgb_baseline_model: "models/xgb_baseline.json"
   ann_baseline_model: "models/ann_baseline.keras"
   baseline_metrics_json: "reports/metrics/baseline_metrics.json"
 
-  # Phase 6: sequence models and metrics
+  # Sequence models and metrics (LSTM, LSTM+CNN hybrid)
   lstm_model: "models/lstm_model.keras"
   hybrid_model: "models/hybrid_model.keras"
   sequence_metrics_json: "reports/metrics/sequence_metrics.json"
 
-  # Phase 7: final comparison
+  # Final model comparison
   results_md: "reports/results.md"
   final_comparison_csv: "reports/metrics/final_comparison.csv"
 
-  # Phase 8: rescheduling
+  # Rescheduling
   rescheduling_results_csv: "reports/rescheduling_results.csv"
 
 split:
@@ -84,7 +84,7 @@ arrival_delay_col: "ARR_DELAY"
 
 features:
   # Candidate predictor columns carried forward from the original notebook analysis.
-  # Phase 3/4 will trim and engineer this list; kept here as the single source of truth.
+  # Feature selection and engineering trim and derive from this list; kept here as the single source of truth.
   - FL_DATE
   - AIRLINE
   - AIRLINE_CODE
@@ -106,8 +106,7 @@ exclusion_flags:
   - DIVERTED
 
 # ---------------------------------------------------------------------------
-# Model hyperparameters — populated in later phases. Left as empty, named
-# blocks now so config.py's schema does not need to change when they fill in.
+# Model hyperparameters, one named block per model.
 # ---------------------------------------------------------------------------
 models:
   xgboost:

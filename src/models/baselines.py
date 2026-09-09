@@ -3,17 +3,18 @@
 Ports reference/FINAL.ipynb cells 73 (imports), 76 (ANN), and 79-81 (XGBoost
 + its actual-vs-predicted scatter plots) — the two non-time-series baselines.
 Inputs are data/processed/X_train_label.parquet / X_test_label.parquet /
-Y_train.parquet / Y_test.parquet from Phase 4.
+Y_train.parquet / Y_test.parquet, produced by the feature-engineering
+pipeline (src.features.build).
 
-Notebook departures (see the Phase 5 summary for full rationale):
+Notebook departures:
   - `set_all_seeds(42)` is called first in main(), before any data or model
     work. The notebook never seeds numpy/random/TensorFlow at all — only
     XGBRegressor's own `random_state=42` — so its ANN runs are not
-    reproducible; this fixes that, as directed.
+    reproducible; this fixes that.
   - A training-mean-predictor floor and the ANN loss-curve plot are not in
-    the notebook; both are added here per the Phase 5 brief.
+    the notebook; both are added here.
   - The notebook never persists either model; this module adds
-    `save_model`/`model.save` calls, per the Phase 5 brief.
+    `save_model`/`model.save` calls.
   - Metrics are written to JSON (reports/metrics/) rather than only printed.
 
 Run as: python -m src.models.baselines --model {xgb,ann,all}
@@ -62,8 +63,7 @@ def mean_predictor_floor(
     """Predict each component's training mean for every row; report MSE/MAE.
 
     The only way to tell whether a model has learned anything beyond this
-    floor, given every feature correlates below r=0.08 with the target
-    (Phase 3).
+    floor, given every feature correlates below r=0.08 with the target.
     """
     train_mean = Y_train.mean()
     y_pred_train = np.tile(train_mean.to_numpy(), (len(Y_train), 1))

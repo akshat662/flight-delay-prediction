@@ -14,12 +14,12 @@ Two things are NOT ported as-is, per explicit instruction:
    *unmodified* `DEP_DELAY` column -- it never recomputes delay from the
    candidate schedule. Its own logged run confirms this: every generation
    reports an identical "Best Score (Total Delay): 18974.0", proving the
-   fitness never responded to the chromosome. Per the Phase 8 brief, this
-   module instead scores a candidate schedule with the best model from
-   Phase 7 (XGBoost retrained on the chronological split): each flight's
-   CRS_DEP_TIME is swapped for its candidate value, the model predicts the
-   five DELAY_DUE_* components under that schedule, and the fitness is
-   their sum across the day's flights. This changes *what* is minimized
+   fitness never responded to the chromosome. This module instead scores a
+   candidate schedule with the best delay model in this project (XGBoost
+   trained on the chronological split): each flight's CRS_DEP_TIME is
+   swapped for its candidate value, the model predicts the five
+   DELAY_DUE_* components under that schedule, and the fitness is their
+   sum across the day's flights. This changes *what* is minimized
    (model-predicted component-sum delay, i.e. an ARR_DELAY proxy, instead
    of historical DEP_DELAY) because no model in this project predicts
    DEP_DELAY -- it does not change the GA's structure (still: aggregate a
@@ -57,7 +57,7 @@ import pandas as pd
 
 from src.config import Config, load_config
 from src.features.build import convert_hhmm_to_mins
-from src.models.evaluate import retrain_xgb_on_chronological_split
+from src.models.evaluate import train_xgb_on_chronological_split
 from src.utils.io import load_df
 from src.utils.plotting import new_figure, save_and_close, style_axes
 from src.utils.seed import set_all_seeds
@@ -242,8 +242,8 @@ def main() -> None:
 
     X_train_chrono = load_df(config.paths.x_train_lstm)
     Y_train_chrono = load_df(config.paths.y_train_lstm)
-    logger.info("Retraining XGBoost on the chronological split (Phase 7's model, not persisted to disk)")
-    model = retrain_xgb_on_chronological_split(X_train_chrono, Y_train_chrono, config)
+    logger.info("Training XGBoost on the chronological split (matches the evaluation module's model; not persisted to disk)")
+    model = train_xgb_on_chronological_split(X_train_chrono, Y_train_chrono, config)
 
     output_table, baseline_score, best_score, history = run_rescheduler(
         day_df, model, airline_encoder, airport_encoder, scaler, ga_cfg
@@ -259,7 +259,7 @@ def main() -> None:
     else:
         logger.warning(
             "The optimized schedule does NOT reduce model-predicted total delay (%.2f%% change). "
-            "Given every feature correlates with delay below r=0.08 (Phase 3), this is plausible: "
+            "Given every feature correlates with delay below r=0.08, this is plausible: "
             "there may be too little schedule-sensitive signal in the model for the GA to exploit.",
             pct_change,
         )

@@ -2,7 +2,8 @@
 
 Each function takes a DataFrame and returns a new DataFrame with one added
 column (or a small group of related columns). No other feature engineering
-belongs here — later phases own encoding, scaling, and modeling features.
+belongs here — encoding, scaling, and modeling features are handled
+elsewhere in this pipeline.
 """
 
 from __future__ import annotations

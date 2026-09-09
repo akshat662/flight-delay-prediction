@@ -9,12 +9,12 @@ never mixes them into a single ranked list:
   1. "own split" -- each of the four saved models evaluated on the test set
      it was actually trained for, each against the mean-predictor floor
      computed on that same split.
-  2. "unified chronological" -- XGBoost and the ANN retrained from scratch
+  2. "unified chronological" -- XGBoost and the ANN trained separately
      (same hyperparameters, freshly seeded) on X_train_lstm/Y_train_lstm and
      scored on X_test_lstm/Y_test_lstm, alongside the already-chronological
      LSTM and hybrid. This is the only table where all four models sit on
-     identical data, and it's the one the README leads with. The retrained
-     models are not persisted -- they exist only to produce this comparison.
+     identical data, and it's the one the README leads with. These models
+     are not persisted -- they exist only to produce this comparison.
 
 Outputs: reports/results.md, reports/metrics/final_comparison.csv, and a
 grouped bar chart of per-component MAE by model in reports/figures/.
@@ -62,7 +62,7 @@ def _pred_vs_truth_stats(y_true: pd.DataFrame, y_pred: np.ndarray, target_cols: 
 
 
 def load_saved_models(config: Config) -> dict:
-    """Load the four models saved by Phase 5/6."""
+    """Load the four trained models from disk."""
     xgb_model = XGBRegressor()
     xgb_model.load_model(config.paths.xgb_baseline_model)
 
@@ -114,14 +114,14 @@ def evaluate_own_split(models: dict, config: Config) -> dict:
     return {"random": floor_random, "chronological": floor_chrono, "models": results}
 
 
-def retrain_xgb_on_chronological_split(X_train, Y_train, config: Config) -> XGBRegressor:
+def train_xgb_on_chronological_split(X_train, Y_train, config: Config) -> XGBRegressor:
     xgb_params = dict(config.models.get("xgboost", {}))
     model = XGBRegressor(random_state=config.seed, **xgb_params)
     model.fit(X_train, Y_train)
     return model
 
 
-def _retrain_ann_on_chrono(X_train, Y_train, config: Config):
+def _train_ann_on_chronological_split(X_train, Y_train, config: Config):
     model = build_ann_model(X_train.shape[1], len(TARGET_COLS), config.models["ann"])
     ann_cfg = config.models["ann"]
     model.fit(
@@ -133,7 +133,7 @@ def _retrain_ann_on_chrono(X_train, Y_train, config: Config):
 
 
 def evaluate_unified_chronological(config: Config) -> dict:
-    """Retrain XGBoost/ANN on the chronological split; compare all 4 models on identical data."""
+    """Train XGBoost/ANN on the chronological split; compare all 4 models on identical data."""
     X_train = load_df(config.paths.x_train_lstm)
     Y_train = load_df(config.paths.y_train_lstm)
     X_test = load_df(config.paths.x_test_lstm)
@@ -141,11 +141,11 @@ def evaluate_unified_chronological(config: Config) -> dict:
 
     floor = mean_predictor_floor(Y_train, Y_test, TARGET_COLS)
 
-    logger.info("Retraining XGBoost on the chronological split (same hyperparameters as Phase 5)")
-    xgb_chrono = retrain_xgb_on_chronological_split(X_train, Y_train, config)
+    logger.info("Training XGBoost on the chronological split (same hyperparameters as the random-split baseline)")
+    xgb_chrono = train_xgb_on_chronological_split(X_train, Y_train, config)
 
-    logger.info("Retraining ANN on the chronological split (same hyperparameters as Phase 5)")
-    ann_chrono = _retrain_ann_on_chrono(X_train, Y_train, config)
+    logger.info("Training ANN on the chronological split (same hyperparameters as the random-split baseline)")
+    ann_chrono = _train_ann_on_chronological_split(X_train, Y_train, config)
 
     lstm_model = keras.models.load_model(config.paths.lstm_model)
     hybrid_model = keras.models.load_model(config.paths.hybrid_model)
@@ -251,8 +251,8 @@ def _write_results_md(own_split: dict, unified: dict, config: Config) -> None:
     lines.append("## Unified comparison (chronological split, all four models)")
     lines.append("")
     lines.append(
-        f"XGBoost and the ANN were retrained from scratch on `X_train_lstm`/`Y_train_lstm` (same "
-        f"hyperparameters as Phase 5) and scored on `X_test_lstm`/`Y_test_lstm`, so all four models "
+        f"XGBoost and the ANN were trained separately on `X_train_lstm`/`Y_train_lstm` (same "
+        f"hyperparameters as the random-split baseline) and scored on `X_test_lstm`/`Y_test_lstm`, so all four models "
         f"sit on identical data here. Floor (chronological test): "
         f"MSE={unified['floor']['test']['mse']:.2f}, MAE={unified['floor']['test']['mae']:.2f}."
     )
@@ -327,7 +327,7 @@ def _write_results_md(own_split: dict, unified: dict, config: Config) -> None:
         f"**Reproduces**: predicted standard deviation is lower than actual standard deviation for "
         f"every model and every component ({'confirmed' if all_pred_std_lower else 'NOT confirmed for all'}). "
         f"All four models predict a narrower range than the true delay distribution -- expected, "
-        f"given every feature correlates with ARR_DELAY below r=0.08 (Phase 3): with this little "
+        f"given every feature correlates with ARR_DELAY below r=0.08: with this little "
         f"signal, MSE-minimizing models converge toward predicting something close to the mean, "
         f"under-representing the tails."
     )

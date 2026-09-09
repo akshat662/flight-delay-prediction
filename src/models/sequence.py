@@ -2,10 +2,11 @@
 
 Ports reference/FINAL.ipynb cells 88-99 (LSTM) and 92-93/107-110 (hybrid) —
 the two time-series baselines. Inputs are data/processed/X_train_lstm.parquet
-/ X_test_lstm.parquet / Y_train_lstm.parquet / Y_test_lstm.parquet from
-Phase 4, which are chronologically ordered and split with shuffle=False.
+/ X_test_lstm.parquet / Y_train_lstm.parquet / Y_test_lstm.parquet, produced
+by the feature-engineering pipeline (src.features.build), which are
+chronologically ordered and split with shuffle=False.
 
-Two notebook bugs, fixed rather than ported (per the Phase 6 brief):
+Two notebook bugs, fixed rather than ported:
   1. Checkpoint paths were inconsistent: cell 91 writes "models/lstm_model
      .keras" and cell 93 writes "../models/hybrid_model.keras" — relative
      paths that resolve differently depending on the notebook's cwd. Both
@@ -72,9 +73,10 @@ def _confirm_chronological_validation_split(X_train: pd.DataFrame, validation_sp
 
     Keras takes the validation fraction from the tail of the arrays as given
     (before any shuffling), and X_train is already sorted chronologically by
-    Phase 4's build.py. So the held-out validation set here should be a
-    genuinely later period than the portion actually fit on -- correct for a
-    time-series model, and worth confirming empirically rather than assuming.
+    the feature-engineering pipeline (src.features.build). So the held-out
+    validation set here should be a genuinely later period than the portion
+    actually fit on -- correct for a time-series model, and worth confirming
+    empirically rather than assuming.
     """
     dates = pd.to_datetime(dict(year=X_train["YEAR"], month=X_train["MONTH"], day=X_train["DAY"]))
     n_val = int(round(len(X_train) * validation_split))

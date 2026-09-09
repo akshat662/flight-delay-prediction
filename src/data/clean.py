@@ -38,8 +38,8 @@ def load_nocancel(
     Reads the raw CSV, records monthly cancelled/diverted counts to
     data/interim/cancelled_diverted_monthly.parquet, drops cancelled/diverted
     rows, and caches the result to data/interim/flights_nocancel.parquet.
-    `clean()` and Phase 2 EDA both build on this frame so the read+drop logic
-    lives in exactly one place.
+    `clean()` and the EDA plotting module both build on this frame so the
+    read+drop logic lives in exactly one place.
     """
     config = config or load_config()
     out_path = config.paths.flights_nocancel

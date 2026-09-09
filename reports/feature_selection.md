@@ -47,7 +47,7 @@ CRS_ELAPSED_TIME vs DISTANCE (multicollinearity check): r = 0.9823.
 | 3 | 0.0687, -0.0008, 0.0274 |
 | 4 | 0.0687, -0.0008, 0.0274, 0.0757 |
 
-## Decisions carried into Phase 4
+## Decisions carried into feature engineering
 
 - **Drop `CRS_ELAPSED_TIME`**: redundant with `DISTANCE` (r = 0.9823 between the two columns).
 - **Drop `AIRLINE_DOT`**: one-to-one with `AIRLINE` (18 vs 18 unique values, 18 distinct pairs).

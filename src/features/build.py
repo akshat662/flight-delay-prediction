@@ -8,16 +8,18 @@ data/processed/ and every fitted encoder/scaler to models/preprocessors/
 via joblib.
 
 Deliberate departures from the notebook (see module docstring notes inline
-at each site, and the Phase 4 summary for full rationale):
+at each site):
   - CRS_ELAPSED_TIME, AIRLINE_DOT, AIRLINE_CODE, DOT_CODE, ORIGIN_CITY,
-    DEST_CITY are excluded from X_df (Phase 3 redundancy findings). The
-    notebook already omitted these from its X_df selection, so this is a
-    documentation change, not a behavior change.
+    DEST_CITY are excluded from X_df (redundancy findings from the feature-
+    selection statistics in src.features.selection). The notebook already
+    omitted these from its X_df selection, so this is a documentation
+    change, not a behavior change.
   - The notebook's `df["DISTANCE"]` cross-frame cast (cell 33/40) relied on
     a pre-outlier-pruned `data` copy that no longer exists as a separate
-    artifact in this pipeline (Phase 1 persists only the post-prune frame).
-    Index-aligned assignment made the original behaviorally equivalent to
-    casting X_df's own DISTANCE column, so that's what this module does.
+    artifact in this pipeline (cleaning persists only the post-prune
+    frame). Index-aligned assignment made the original behaviorally
+    equivalent to casting X_df's own DISTANCE column, so that's what this
+    module does.
   - Two commented-out, hardcoded-row-value asserts (shared-encoder spot
     check in cell 36; first-5-rows check in cell 38) are replaced with
     equivalent order-independent checks: a full round-trip check on the
@@ -27,8 +29,7 @@ at each site, and the Phase 4 summary for full rationale):
   - Cell 69 saves the one-hot frames from *before* cell 67's MinMax step,
     silently discarding the normalized frames. This module saves the
     normalized frames instead (X_train_onehot_norm / X_test_onehot_norm),
-    since that is what "one-hot + MinMax alternate" in the phase brief
-    describes.
+    since that is what "one-hot + MinMax alternate" describes.
   - Outputs are saved as Parquet, per this project's standing convention,
     not the notebook's CSV.
   - Cell 58's `_cpy` aliases are unused within the ported cell range and
@@ -57,7 +58,8 @@ from src.utils.seed import set_all_seeds
 logger = logging.getLogger(__name__)
 
 # Columns selected into X_df (cell 31). CRS_ELAPSED_TIME, AIRLINE_DOT,
-# AIRLINE_CODE, DOT_CODE, ORIGIN_CITY, DEST_CITY are excluded per Phase 3.
+# AIRLINE_CODE, DOT_CODE, ORIGIN_CITY, DEST_CITY are excluded per the
+# feature-selection redundancy findings (src.features.selection).
 X_SELECT_COLS = [
     "FL_DATE", "FL_NUMBER", "AIRLINE", "ORIGIN", "DEST",
     "CRS_DEP_TIME", "CRS_ARR_TIME", "DISTANCE", "TAXI_IN", "TAXI_OUT",
@@ -202,11 +204,11 @@ def _log_lstm_group_sizes(X_train_lstm: pd.DataFrame) -> None:
 
 
 def build(config: Config | None = None, force: bool = False, validate: bool = True) -> dict[str, pd.DataFrame]:
-    """Run the full Phase 4 pipeline, writing every artifact under data/processed/ and models/preprocessors/."""
+    """Run the full feature-engineering pipeline, writing every artifact under data/processed/ and models/preprocessors/."""
     config = config or load_config()
 
     if not force and config.paths.y_test_lstm.exists():
-        logger.info("Phase 4 outputs already present (force=False); skipping. Pass --force to rebuild.")
+        logger.info("Feature-engineering outputs already present (force=False); skipping. Pass --force to rebuild.")
         return {
             "X_train_scale": load_df(config.paths.x_train_label),
             "X_test_scale": load_df(config.paths.x_test_label),

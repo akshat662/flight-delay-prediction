@@ -4,7 +4,7 @@ Two test splits are in play here and they are not interchangeable: XGBoost and t
 
 ## Unified comparison (chronological split, all four models)
 
-XGBoost and the ANN were retrained from scratch on `X_train_lstm`/`Y_train_lstm` (same hyperparameters as Phase 5) and scored on `X_test_lstm`/`Y_test_lstm`, so all four models sit on identical data here. Floor (chronological test): MSE=409.24, MAE=11.37.
+XGBoost and the ANN were trained separately on `X_train_lstm`/`Y_train_lstm` (same hyperparameters as the random-split baseline) and scored on `X_test_lstm`/`Y_test_lstm`, so all four models sit on identical data here. Floor (chronological test): MSE=409.24, MAE=11.37.
 
 | model | test MSE | test MAE | % improvement over floor (MSE) | % improvement over floor (MAE) |
 |---|---|---|---|---|
@@ -112,5 +112,5 @@ The source notebook noted that its LSTM's predictions had much lower variance th
 | DELAY_DUE_NAS | 10.91 | 19.66 | 11.74 | 11.05 |
 | DELAY_DUE_LATE_AIRCRAFT | 19.37 | 29.45 | 18.04 | 9.29 |
 
-**Reproduces**: predicted standard deviation is lower than actual standard deviation for every model and every component (confirmed). All four models predict a narrower range than the true delay distribution -- expected, given every feature correlates with ARR_DELAY below r=0.08 (Phase 3): with this little signal, MSE-minimizing models converge toward predicting something close to the mean, under-representing the tails.
+**Reproduces**: predicted standard deviation is lower than actual standard deviation for every model and every component (confirmed). All four models predict a narrower range than the true delay distribution -- expected, given every feature correlates with ARR_DELAY below r=0.08: with this little signal, MSE-minimizing models converge toward predicting something close to the mean, under-representing the tails.
 

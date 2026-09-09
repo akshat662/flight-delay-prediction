@@ -1,25 +1,18 @@
 # Flight Delay Prediction
 
-## Problem statement
+## Overview
 
-US domestic flights are frequently delayed, and delays are attributed to one
-of five causes tracked by the Bureau of Transportation Statistics (BTS):
-carrier, weather, National Airspace System (NAS), security, and late
-aircraft. This project builds a reproducible, production-style pipeline to
-predict:
-
-- the five delay-component targets — `DELAY_DUE_CARRIER`, `DELAY_DUE_WEATHER`,
-  `DELAY_DUE_NAS`, `DELAY_DUE_SECURITY`, `DELAY_DUE_LATE_AIRCRAFT`
-- overall arrival delay (`ARR_DELAY`)
-
-for US domestic flights, using historical BTS data — and to honestly report
-how well that works, which (see Findings) turns out to be "a little, not a
-lot."
-
-Carrier delays are the most common cause among delayed flights, followed by
-late-aircraft delays; security delays are rare:
-
-![Departure delay reasons](docs/images/bar_departure_delay_reasons.png)
+This project predicts why and how long US domestic flights are delayed, and
+reports honestly on how well that works: every scheduling feature available
+(departure/arrival time, airline, distance, airport) correlates with delay
+below r=0.08, so no model here is close to a strong fit. The best model
+(XGBoost) beats a mean-predictor floor by about 15%, and — contrary to the
+common assumption that sequence models suit time-series delay data — neither
+an LSTM nor an LSTM+CNN hybrid beats it, because of how their input is
+structured (see Findings). A genetic-algorithm rescheduler is also included;
+it finds a real but modest improvement to a day's departure schedule, part
+of which is likely model extrapolation rather than a trustworthy scheduling
+signal (see Rescheduling).
 
 ## Dataset
 
@@ -38,92 +31,53 @@ of delayed flights, about double Fall's share:
 
 ![Departure delays by season](docs/images/pie_departure_delays_by_season.png)
 
-## Pipeline
+## Approach
+
+Delays are attributed to one of five causes tracked by the Bureau of
+Transportation Statistics (BTS): carrier, weather, National Airspace System
+(NAS), security, and late aircraft. This project predicts:
+
+- the five delay-component targets — `DELAY_DUE_CARRIER`, `DELAY_DUE_WEATHER`,
+  `DELAY_DUE_NAS`, `DELAY_DUE_SECURITY`, `DELAY_DUE_LATE_AIRCRAFT`
+- overall arrival delay (`ARR_DELAY`)
+
+Carrier delays are the most common cause among delayed flights, followed by
+late-aircraft delays; security delays are rare:
+
+![Departure delay reasons](docs/images/bar_departure_delay_reasons.png)
+
+The pipeline: clean the raw data, explore it, run feature-selection
+statistics to decide what to keep, engineer and encode features, train two
+non-sequential baselines (XGBoost, an ANN) and two sequence models (an LSTM,
+an LSTM+CNN hybrid), evaluate all four on a common footing, and use the best
+model to drive a genetic-algorithm rescheduler.
 
 ```mermaid
 flowchart TD
-    A["Phase 1\ndownload.py + clean.py\nraw CSV -> flights_clean.parquet"] --> B["Phase 2\nderive.py + plots.py\n28 EDA figures + findings"]
-    A --> C["Phase 3\nselection.py\nPearson / Kruskal-Wallis / PCA"]
-    C --> D["Phase 4\nbuild.py\nencode, split, scale\n-> label/one-hot/LSTM frames"]
-    D --> E["Phase 5\nbaselines.py\nXGBoost + ANN\n(random 75/25 split)"]
-    D --> F["Phase 6\nsequence.py\nLSTM + LSTM/CNN hybrid\n(chronological split)"]
-    E --> G["Phase 7\nevaluate.py\nunified comparison\nresults.md + final_comparison.csv"]
-    F --> G
-    G --> H["Phase 8\ngenetic.py\nGA rescheduler -> rescheduling_results.csv"]
+    A["Raw BTS CSV\n(kagglehub download)"] --> B["Cleaning\ndownload.py + clean.py\n-> flights_clean.parquet"]
+    B --> C["Exploratory analysis\nderive.py + plots.py\n28 figures + findings"]
+    B --> D["Feature-selection statistics\nselection.py\nPearson / Kruskal-Wallis / PCA"]
+    D --> E["Feature engineering\nbuild.py\nencode, split, scale\n-> label / one-hot / sequence frames"]
+    E --> F["Baseline models\nbaselines.py\nXGBoost + ANN (random split)"]
+    E --> G["Sequence models\nsequence.py\nLSTM + LSTM/CNN hybrid (chronological split)"]
+    F --> H["Evaluation\nevaluate.py\nunified comparison -> results.md"]
+    G --> H
+    H --> I["Rescheduling\ngenetic.py\nGA optimizer -> rescheduling_results.csv"]
 ```
 
-## Repo layout
-
-```
-configs/config.yaml       All configuration: paths, seed, targets, features, hyperparameters
-docs/images/               Curated, tracked figures embedded in this README (not gitignored)
-data/
-  raw/                     Downloaded source CSV (gitignored)
-  interim/                 Intermediate artifacts (gitignored)
-  processed/               Modeling-ready Parquet (gitignored)
-models/                    Trained model artifacts + preprocessors (gitignored)
-reports/
-  figures/                 Generated plots (gitignored)
-  metrics/                 Metrics JSON/CSV (gitignored)
-  cleaning_summary.md      Row counts and stats from the cleaning run
-  eda_findings.md          One finding per EDA figure, with numbers
-  feature_selection.md     Pearson / Kruskal-Wallis / PCA statistics and decisions
-  results.md               Final model comparison (this phase)
-reference/                 Original source notebooks (FINAL.ipynb, EDA.ipynb)
-src/
-  config.py                Loads configs/config.yaml into a frozen dataclass
-  data/
-    download.py             Kaggle dataset download
-    clean.py                Cleaning pipeline
-  features/
-    derive.py                EDA derived columns (season, time-of-day, ...)
-    selection.py              Feature-selection statistics
-    build.py                  Encoding, splits, scaling, sequence data
-  models/
-    baselines.py              XGBoost + ANN (random split)
-    sequence.py                LSTM + LSTM/CNN hybrid (chronological split)
-    evaluate.py                Unified comparison across both splits
-  scheduling/
-    genetic.py                  GA rescheduler (Phase 8)
-  eda/
-    plots.py                   28 EDA figures
-  utils/
-    seed.py                  Deterministic seeding
-    io.py                    Parquet save/load + cache helper
-    plotting.py              Shared matplotlib styling
-tests/                     Pytest unit tests
-```
-
-## Setup
-
-```bash
-make install
-make data    # downloads the raw CSV and runs the cleaning pipeline
-make test
-```
-
-## How to run each phase
-
-```bash
-python -m src.data.download                       # Phase 1: fetch the raw CSV
-python -m src.data.clean [--force]                 # Phase 1: clean -> flights_clean.parquet
-python -m src.eda.plots                            # Phase 2: 28 figures + eda_findings.md
-python -m src.features.selection                   # Phase 3: feature_selection.md
-python -m src.features.build [--force] [--no-validate]  # Phase 4: encode/split/scale
-python -m src.models.baselines --model {xgb,ann,all}    # Phase 5: baseline models
-python -m src.models.sequence --model {lstm,hybrid,all} # Phase 6: sequence models
-python -m src.models.evaluate                       # Phase 7: unified comparison
-python -m src.scheduling.genetic                     # Phase 8: GA rescheduler
-```
-
-Every module is also importable directly (`from src.data.clean import clean`).
+Two test splits are used and are never mixed into one ranked list: XGBoost
+and the ANN are trained on a random 75/25 split; the LSTM and hybrid are
+trained on a chronological, `shuffle=False` split (necessary for a
+time-series model — the validation/test data must be a genuinely later
+period, which is confirmed directly in the code rather than assumed).
 
 ## Results
 
 All four models evaluated on the **same** chronological test set (XGBoost and
-the ANN retrained on `X_train_lstm`/`Y_train_lstm` with identical
-hyperparameters to Phase 5, so this table is a fair comparison — the
-mean-predictor floor row is what every model is being compared against):
+the ANN trained on `X_train_lstm`/`Y_train_lstm` with identical
+hyperparameters to their random-split counterparts, so this table is a fair
+comparison — the mean-predictor floor row is what every model is being
+compared against):
 
 | model | test MSE | test MAE | % improvement over floor (MSE) |
 |---|---|---|---|
@@ -141,120 +95,38 @@ the source data is in
 
 ![Per-component MAE by model](docs/images/mae_by_model_grouped_bar.png)
 
-## Findings
+## Rescheduling
 
-- **Only ~18% of rows carry a delay-cause breakdown.** BTS only publishes
-  the five `DELAY_DUE_*` columns for arrivals 15+ minutes late (533,863 of
-  2,913,804 non-cancelled/diverted rows, 18.3%; 17.8% of all 3,000,000 raw
-  rows). Every model in this project is therefore modeling *delayed
-  flights only* — not "will this flight be delayed," but "given it already
-  is, how is that delay attributed and how long is it."
-- **Every scheduling feature correlates with `ARR_DELAY` below r=0.08**
-  (Phase 3; `CRS_DEP_TIME` highest at r=0.0704). The models beat a
-  mean-predictor floor by roughly 11-17% (MSE), which is real — every model
-  learned *something* — but modest, and no model here is close to a strong
-  fit. Predicted values also have visibly lower variance than the actual
-  delays for every model and every component (confirmed directly in
-  `results.md`): with this little signal, MSE-minimizing models converge
-  toward predicting something close to the mean rather than reproducing the
-  true spread.
-- **The sequence models do not beat XGBoost — this is the project's main
-  finding.** On an identical chronological test set, XGBoost's MSE (347.87)
-  beats both LSTM (355.74) and the hybrid (357.50), contradicting the
-  source report's claim of time-series superiority. The architectural
-  reason: both sequence models are built with `Input(shape=(11, 1))`, which
-  feeds the **11 feature columns** of a single flight as 11 "timesteps" of
-  a length-1 channel. Each training sample is one flight; there is no
-  sequence of flights anywhere in the input. The LSTM's recurrence steps
-  across *feature slots* (year, then month, then day, then airline, ...),
-  not across *time*, so there is no temporal dependency in the data for it
-  to capture. A model built this way cannot outperform a non-sequential
-  model on structural grounds, and it doesn't.
-- **The source report's identical LSTM and hybrid MSE (367.868) traces to
-  inconsistent checkpoint paths.** One `ModelCheckpoint` wrote to
-  `"models/lstm_model.keras"`, the other to `"../models/hybrid_model.keras"`
-  — cwd-dependent relative paths. With both checkpoints pointed at
-  config-driven paths and each session's own file confirmed to exist before
-  reload, the two models produce different metrics (355.74 vs. 357.50).
-- **The source's ANN MSE of 1118.49 vs. our 368.53, despite both reporting
-  MAE ≈ 10.02**, indicates a few extreme predictions from an unseeded
-  initialization, not a materially different model. MAE is robust to a
-  handful of large misses; MSE is not. The source notebook never seeds
-  NumPy, Python's `random`, or TensorFlow (only `XGBRegressor`'s own
-  `random_state=42`), so its ANN runs are not reproducible. This project
-  calls `set_all_seeds(42)` first in every entry point.
-- **The source's holiday finding was a label swap**: it reported ~30x more
-  delays on holidays, but the two bar labels (`Holiday`/`Non-holiday`) were
-  swapped relative to the underlying `True`/`False` groups. Correctly
-  labeled, non-holiday days have the higher per-day delay rate (251.5/day
-  vs. 236.9/day for departures) simply because there are far more
-  non-holiday days in the range (1,648 vs. 56).
-- **The source's taxi-in-by-airline result came from index-misaligned
-  assignment across differently-filtered frames.** In `EDA.ipynb`, the
-  taxi-flag analysis slices a subset (`pot = data[[...]]`) from a `data`
-  variable that gets reassigned and re-filtered many times across the
-  notebook's ~150 cells, then mutates that subset's columns in place with
-  `np.where(...)`. If the slice and the mutation don't share the same row
-  index at the time each cell runs, the `High`/`Low` labels no longer line
-  up with the `AIRLINE` column they're grouped by. Our from-scratch Phase 2
-  computation found Southwest as the airline with the most high-taxi-in
-  flights, not American as the source reported — the taxi-out result
-  (SkyWest) and the destination/origin results (ORD on both) matched.
-
-## Limitations
-
-- **`TAXI_IN`/`TAXI_OUT` are only known after the aircraft has actually
-  taxied** — they aren't available at the time a schedule is published.
-  Every model here is *explanatory* (why was this flight's delay what it
-  was) rather than *predictive at scheduling time* (how delayed will an
-  upcoming flight be, using only information available when it's
-  scheduled).
-- **IQR outlier pruning removed 8.25% of rows** (44,035 of 533,863) —
-  including genuine extreme delays, not just data errors. The models are
-  evaluated on a population that already excludes the longest, presumably
-  most-consequential delays.
-- **The chronological test period is entirely post-COVID-recovery** (2022-10-16
-  to 2023-08-31 — every row) **while training spans the 2020-2021 collapse**
-  (41,037 rows in 2020, 95,367 in 2021, out of 367,371 training rows). The
-  LSTM/hybrid models were trained partly on a demand regime that no longer
-  existed by the time they're tested.
-- **Generalization to unseen airports and routes is untested.** `ORIGIN`
-  and `DEST` are label-encoded from the training vocabulary; nothing in
-  this pipeline evaluates how any model behaves on an airport it never saw
-  during training.
-
-## Rescheduling (Phase 8)
-
-`src/scheduling/genetic.py` implements the genetic-algorithm rescheduler:
+`src/scheduling/genetic.py` implements a genetic-algorithm rescheduler:
 per-day search over `CRS_DEP_TIME` for 2023-08-31's 333 delayed flights
 (`data/processed/flights_clean.parquet`), using the source notebook's exact
 constants and operators — `POPULATION_SIZE=50`, `NUM_GENERATIONS=100`,
 `MUTATION_RATE=0.1`, `TOURNAMENT_SIZE=5`, tournament selection, single-point
 crossover, mutation perturbation ±63 (init ±30), both clipped to `[0, 2359]`.
 
-Two things were **not** ported as-is. First, the source notebook's fitness
-function reassigns `data_day['CRS_DEP_TIME']` to the candidate schedule but
-then sums the *unmodified* `DEP_DELAY` column — it never recomputes delay
-from the candidate, which its own logged run confirms: every one of its 100
-generations reports an identical "Best Score (Total Delay): 18974.0." This
-build instead scores each candidate with XGBoost retrained on the
-chronological split (Phase 7), predicting the five `DELAY_DUE_*`
-components under that schedule and summing them — an ARR_DELAY-proxy
-substituted for DEP_DELAY, since no model in this project predicts
-DEP_DELAY. Second, that same in-place mutation corrupts the source
+Two things were **not** ported as-is from the source notebook. First, its
+fitness function reassigns `data_day['CRS_DEP_TIME']` to the candidate
+schedule but then sums the *unmodified* `DEP_DELAY` column — it never
+recomputes delay from the candidate, which its own logged run confirms:
+every one of its 100 generations reports an identical "Best Score (Total
+Delay): 18974.0." This build instead scores each candidate with the best
+delay model here (XGBoost trained on the chronological split), predicting
+the five `DELAY_DUE_*` components under that schedule and summing them — an
+ARR_DELAY-proxy substituted for DEP_DELAY, since no model in this project
+predicts DEP_DELAY. Second, that same in-place mutation corrupts the source
 notebook's own output table: its "original" `CRS_DEP_TIME` column shows
 1993 and 1078 for two flights whose real scheduled times are 2050 and
-1030 — leaked, un-normalized chromosome state, not a genuine
+1030 — leaked, un-normalized internal state, not a genuine
 minutes-vs-HHMM representation choice. This build never mutates the source
 frame, so its `CRS_DEP_TIME` column is the untouched original.
 
 **Result**: optimizing the day's schedule reduces model-predicted total
 delay from **15,765.90 to 15,227.05 minutes — a 3.42% improvement.** That's
 real (the convergence plot below shows steady, non-trivial improvement
-across 100 generations, not noise) but modest, consistent with Phase 3's
-finding that every feature correlates with delay below r=0.08: there's
-little schedule-sensitive signal in the model for the GA to exploit, so a
-large win was never on the table. Full per-flight output is in
+across 100 generations, not noise) but modest, consistent with every
+feature correlating with delay below r=0.08: there's little
+schedule-sensitive signal in the model for the GA to exploit, so a large
+win was never on the table. Full per-flight output is in
 [`reports/rescheduling_results.csv`](reports/rescheduling_results.csv).
 
 ![GA convergence: best fitness per generation](docs/images/ga_convergence.png)
@@ -329,12 +201,175 @@ to constrain candidate departure times to well-represented hours (or
 penalize moves into sparse ones) to avoid rewarding exactly this failure
 mode.
 
+## Findings
+
+- **Only ~18% of rows carry a delay-cause breakdown.** BTS only publishes
+  the five `DELAY_DUE_*` columns for arrivals 15+ minutes late (533,863 of
+  2,913,804 non-cancelled/diverted rows, 18.3%; 17.8% of all 3,000,000 raw
+  rows). Every model in this project is therefore modeling *delayed
+  flights only* — not "will this flight be delayed," but "given it already
+  is, how is that delay attributed and how long is it."
+- **Every scheduling feature correlates with `ARR_DELAY` below r=0.08**
+  (`CRS_DEP_TIME` highest at r=0.0704). The models beat a mean-predictor
+  floor by roughly 11-17% (MSE), which is real — every model learned
+  *something* — but modest, and no model here is close to a strong fit.
+  Predicted values also have visibly lower variance than the actual delays
+  for every model and every component (confirmed directly in
+  `results.md`): with this little signal, MSE-minimizing models converge
+  toward predicting something close to the mean rather than reproducing the
+  true spread.
+- **The sequence models do not beat XGBoost — this is the project's main
+  finding.** On an identical chronological test set, XGBoost's MSE (347.87)
+  beats both LSTM (355.74) and the hybrid (357.50), contradicting the
+  source report's claim of time-series superiority. The architectural
+  reason: both sequence models are built with `Input(shape=(11, 1))`, which
+  feeds the **11 feature columns** of a single flight as 11 "timesteps" of
+  a length-1 channel. Each training sample is one flight; there is no
+  sequence of flights anywhere in the input. The LSTM's recurrence steps
+  across *feature slots* (year, then month, then day, then airline, ...),
+  not across *time*, so there is no temporal dependency in the data for it
+  to capture. A model built this way cannot outperform a non-sequential
+  model on structural grounds, and it doesn't.
+- **The source report's identical LSTM and hybrid MSE (367.868) traces to
+  inconsistent checkpoint paths.** One `ModelCheckpoint` wrote to
+  `"models/lstm_model.keras"`, the other to `"../models/hybrid_model.keras"`
+  — cwd-dependent relative paths. With both checkpoints pointed at
+  config-driven paths and each session's own file confirmed to exist before
+  reload, the two models produce different metrics (355.74 vs. 357.50).
+- **The source's ANN MSE of 1118.49 vs. our 368.53, despite both reporting
+  MAE ≈ 10.02**, indicates a few extreme predictions from an unseeded
+  initialization, not a materially different model. MAE is robust to a
+  handful of large misses; MSE is not. The source notebook never seeds
+  NumPy, Python's `random`, or TensorFlow (only `XGBRegressor`'s own
+  `random_state=42`), so its ANN runs are not reproducible. This project
+  calls `set_all_seeds(42)` first in every entry point.
+- **The source's holiday finding was a label swap**: it reported ~30x more
+  delays on holidays, but the two bar labels (`Holiday`/`Non-holiday`) were
+  swapped relative to the underlying `True`/`False` groups. Correctly
+  labeled, non-holiday days have the higher per-day delay rate (251.5/day
+  vs. 236.9/day for departures) simply because there are far more
+  non-holiday days in the range (1,648 vs. 56).
+- **The source's taxi-in-by-airline result came from index-misaligned
+  assignment across differently-filtered frames.** In `EDA.ipynb`, the
+  taxi-flag analysis slices a subset (`pot = data[[...]]`) from a `data`
+  variable that gets reassigned and re-filtered many times across the
+  notebook's ~150 cells, then mutates that subset's columns in place with
+  `np.where(...)`. If the slice and the mutation don't share the same row
+  index at the time each cell runs, the `High`/`Low` labels no longer line
+  up with the `AIRLINE` column they're grouped by. A from-scratch
+  computation found Southwest as the airline with the most high-taxi-in
+  flights, not American as the source reported — the taxi-out result
+  (SkyWest) and the destination/origin results (ORD on both) matched.
+
+## Limitations
+
+- **`TAXI_IN`/`TAXI_OUT` are only known after the aircraft has actually
+  taxied** — they aren't available at the time a schedule is published.
+  Every model here is *explanatory* (why was this flight's delay what it
+  was) rather than *predictive at scheduling time* (how delayed will an
+  upcoming flight be, using only information available when it's
+  scheduled).
+- **IQR outlier pruning removed 8.25% of rows** (44,035 of 533,863) —
+  including genuine extreme delays, not just data errors. The models are
+  evaluated on a population that already excludes the longest, presumably
+  most-consequential delays.
+- **The chronological test period is entirely post-COVID-recovery** (2022-10-16
+  to 2023-08-31 — every row) **while training spans the 2020-2021 collapse**
+  (41,037 rows in 2020, 95,367 in 2021, out of 367,371 training rows). The
+  LSTM/hybrid models were trained partly on a demand regime that no longer
+  existed by the time they're tested.
+- **Generalization to unseen airports and routes is untested.** `ORIGIN`
+  and `DEST` are label-encoded from the training vocabulary; nothing in
+  this pipeline evaluates how any model behaves on an airport it never saw
+  during training.
+
+## Repo structure
+
+```
+configs/config.yaml       All configuration: paths, seed, targets, features, hyperparameters
+docs/images/               Curated, tracked figures embedded in this README (not gitignored)
+data/
+  raw/                     Downloaded source CSV (gitignored)
+  interim/                 Intermediate artifacts (gitignored)
+  processed/               Modeling-ready Parquet (gitignored)
+models/                    Trained model artifacts + preprocessors (gitignored)
+reports/
+  figures/                 Generated plots (gitignored)
+  metrics/                 Metrics JSON/CSV (gitignored)
+  cleaning_summary.md      Row counts and stats from the cleaning run
+  eda_findings.md          One finding per EDA figure, with numbers
+  feature_selection.md     Pearson / Kruskal-Wallis / PCA statistics and decisions
+  results.md               Full model comparison
+  rescheduling_results.csv Per-flight rescheduling output
+reference/                 Original source notebooks (FINAL.ipynb, EDA.ipynb)
+src/
+  config.py                Loads configs/config.yaml into a frozen dataclass
+  data/
+    download.py             Kaggle dataset download
+    clean.py                Cleaning pipeline
+  features/
+    derive.py                EDA derived columns (season, time-of-day, ...)
+    selection.py              Feature-selection statistics
+    build.py                  Encoding, splits, scaling, sequence data
+  models/
+    baselines.py              XGBoost + ANN (random split)
+    sequence.py                LSTM + LSTM/CNN hybrid (chronological split)
+    evaluate.py                Unified comparison across both splits
+  scheduling/
+    genetic.py                 GA rescheduler
+  eda/
+    plots.py                   28 EDA figures
+  utils/
+    seed.py                  Deterministic seeding
+    io.py                    Parquet save/load + cache helper
+    plotting.py              Shared matplotlib styling
+tests/                     Pytest unit tests
+```
+
+## Setup and usage
+
+```bash
+make install
+make data    # downloads the raw CSV and runs the cleaning pipeline
+make test
+```
+
+### Run the full pipeline
+
+```bash
+python -m src.data.download
+python -m src.data.clean
+python -m src.eda.plots
+python -m src.features.selection
+python -m src.features.build
+python -m src.models.baselines --model all
+python -m src.models.sequence --model all
+python -m src.models.evaluate
+python -m src.scheduling.genetic
+```
+
+### Individual steps
+
+| command | what it does |
+|---|---|
+| `python -m src.data.download` | Fetches the raw CSV via `kagglehub` |
+| `python -m src.data.clean [--force]` | Cleans the raw data -> `flights_clean.parquet` |
+| `python -m src.eda.plots` | Generates 28 exploratory figures + `eda_findings.md` |
+| `python -m src.features.selection` | Runs Pearson / Kruskal-Wallis / PCA statistics -> `feature_selection.md` |
+| `python -m src.features.build [--force] [--no-validate]` | Encodes, splits, and scales features -> label / one-hot / sequence frames |
+| `python -m src.models.baselines --model {xgb,ann,all}` | Trains the XGBoost and/or ANN baselines |
+| `python -m src.models.sequence --model {lstm,hybrid,all}` | Trains the LSTM and/or LSTM+CNN hybrid |
+| `python -m src.models.evaluate` | Builds the unified model comparison -> `results.md` |
+| `python -m src.scheduling.genetic` | Runs the GA rescheduler -> `rescheduling_results.csv` |
+
+Every module is also importable directly (`from src.data.clean import clean`).
+
 ## Future work
 
-- Feature engineering beyond what Phase 3/4 selected — weather data, airport
-  congestion/capacity, and rolling airline/route delay history are all
-  absent from the current feature set and are more likely to carry signal
-  than the scheduling fields alone (r<0.08 across the board).
+- Feature engineering beyond what's currently selected — weather data,
+  airport congestion/capacity, and rolling airline/route delay history are
+  all absent from the current feature set and are more likely to carry
+  signal than the scheduling fields alone (r<0.08 across the board).
 - Re-evaluate the sequence architectures with an actual sequence as input —
   e.g. a window of a route's or airport's recent flights — now that this
   build has established that feeding 11 features as 11 timesteps gives an
@@ -343,16 +378,11 @@ mode.
   HHMM-encoded times) doesn't correspond exactly to real minute-of-day
   shifts whenever it crosses a hundreds-digit boundary (e.g. 950 + 63 = 1013,
   which decodes as 10:13, not the correct 10:53) — ported unchanged from
-  the source notebook per this phase's "do not redesign" instruction, but
-  worth fixing to minutes-past-midnight arithmetic in any future revision.
+  the source notebook's own operators, but worth fixing to
+  minutes-past-midnight arithmetic in any future revision.
 
-## Pipeline status
+## References
 
-- [x] Phase 1 — Scaffold, data acquisition, cleaning
-- [x] Phase 2 — EDA and figures
-- [x] Phase 3 — Feature-selection statistics (Pearson, Kruskal–Wallis, PCA check)
-- [x] Phase 4 — Feature engineering, encoding, splits, scaling
-- [x] Phase 5 — Baseline models (XGBoost, ANN)
-- [x] Phase 6 — Sequence models (LSTM, LSTM+CNN hybrid)
-- [x] Phase 7 — Evaluation, comparison table, README
-- [x] Phase 8 — Rescheduling optimizer
+- [Dataset: `patrickzel/flight-delay-and-cancellation-dataset-2019-2023`](https://www.kaggle.com/datasets/patrickzel/flight-delay-and-cancellation-dataset-2019-2023) (Kaggle)
+- [`reference/FINAL.ipynb`](reference/FINAL.ipynb) — the original source notebook this project reproduces, corrects, and evaluates against
+- [`reference/EDA.ipynb`](reference/EDA.ipynb) — the original exploratory-analysis notebook referenced in the Findings section
