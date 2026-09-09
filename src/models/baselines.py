@@ -125,27 +125,34 @@ def train_xgb(
     return metrics
 
 
-def train_ann(
-    X_train: pd.DataFrame, Y_train: pd.DataFrame, X_test: pd.DataFrame, Y_test: pd.DataFrame,
-    target_cols: list[str], config: Config,
-) -> dict:
-    """cell 76: Dense(64,relu) -> Dense(32,relu) -> Dense(5), adam/mse/mae, 50 epochs, batch 32."""
-    ann_cfg = config.models.get("ann", {})
+def build_ann_model(n_features: int, n_targets: int, ann_cfg: dict) -> Sequential:
+    """cell 76: Dense(64,relu) -> Dense(32,relu) -> Dense(5), adam/mse/mae."""
     hidden_layers = ann_cfg.get("hidden_layers", [64, 32])
     activation = ann_cfg.get("activation", "relu")
     optimizer = ann_cfg.get("optimizer", "adam")
     loss = ann_cfg.get("loss", "mse")
     metric_names = ann_cfg.get("metrics", ["mae"])
+
+    model = Sequential(
+        [Dense(hidden_layers[0], activation=activation, input_shape=(n_features,))]
+        + [Dense(n, activation=activation) for n in hidden_layers[1:]]
+        + [Dense(n_targets)]
+    )
+    model.compile(optimizer=optimizer, loss=loss, metrics=metric_names)
+    return model
+
+
+def train_ann(
+    X_train: pd.DataFrame, Y_train: pd.DataFrame, X_test: pd.DataFrame, Y_test: pd.DataFrame,
+    target_cols: list[str], config: Config,
+) -> dict:
+    """cell 76: build, train, and evaluate the ANN; 50 epochs, batch 32."""
+    ann_cfg = config.models.get("ann", {})
     epochs = ann_cfg.get("epochs", 50)
     batch_size = ann_cfg.get("batch_size", 32)
     validation_split = ann_cfg.get("validation_split", 0.2)
 
-    model = Sequential(
-        [Dense(hidden_layers[0], activation=activation, input_shape=(X_train.shape[1],))]
-        + [Dense(n, activation=activation) for n in hidden_layers[1:]]
-        + [Dense(len(target_cols))]
-    )
-    model.compile(optimizer=optimizer, loss=loss, metrics=metric_names)
+    model = build_ann_model(X_train.shape[1], len(target_cols), ann_cfg)
 
     history = model.fit(
         X_train, Y_train, epochs=epochs, batch_size=batch_size, validation_split=validation_split, verbose=2

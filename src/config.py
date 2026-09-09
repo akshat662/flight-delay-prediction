@@ -64,6 +64,8 @@ class PathsConfig:
     lstm_model: Path
     hybrid_model: Path
     sequence_metrics_json: Path
+    results_md: Path
+    final_comparison_csv: Path
 
 
 @dataclass(frozen=True)
@@ -140,6 +142,8 @@ def load_config(config_path: Path | str = DEFAULT_CONFIG_PATH) -> Config:
         lstm_model=_resolve(repo_root, raw_paths["lstm_model"]),
         hybrid_model=_resolve(repo_root, raw_paths["hybrid_model"]),
         sequence_metrics_json=_resolve(repo_root, raw_paths["sequence_metrics_json"]),
+        results_md=_resolve(repo_root, raw_paths["results_md"]),
+        final_comparison_csv=_resolve(repo_root, raw_paths["final_comparison_csv"]),
     )
 
     config = Config(

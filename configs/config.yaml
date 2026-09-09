@@ -59,6 +59,10 @@ paths:
   hybrid_model: "models/hybrid_model.keras"
   sequence_metrics_json: "reports/metrics/sequence_metrics.json"
 
+  # Phase 7: final comparison
+  results_md: "reports/results.md"
+  final_comparison_csv: "reports/metrics/final_comparison.csv"
+
 split:
   test_size: 0.25
 
