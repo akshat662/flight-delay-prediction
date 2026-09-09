@@ -16,6 +16,7 @@ paths:
   preprocessors_dir: "models/preprocessors"
   reports_dir: "reports"
   figures_dir: "reports/figures"
+  metrics_dir: "reports/metrics"
 
   raw_csv: "data/raw/flights_sample_3m.csv"
   cancelled_diverted_monthly: "data/interim/cancelled_diverted_monthly.parquet"
@@ -47,6 +48,11 @@ paths:
   airport_encoder: "models/preprocessors/airport_encoder.joblib"
   standard_scaler: "models/preprocessors/standard_scaler.joblib"
   minmax_scaler: "models/preprocessors/minmax_scaler.joblib"
+
+  # Phase 5: baseline models and metrics
+  xgb_baseline_model: "models/xgb_baseline.json"
+  ann_baseline_model: "models/ann_baseline.keras"
+  baseline_metrics_json: "reports/metrics/baseline_metrics.json"
 
 split:
   test_size: 0.25
@@ -92,7 +98,16 @@ exclusion_flags:
 # blocks now so config.py's schema does not need to change when they fill in.
 # ---------------------------------------------------------------------------
 models:
-  xgboost: {}
-  ann: {}
+  xgboost:
+    objective: "reg:squarederror"
+  ann:
+    hidden_layers: [64, 32]
+    activation: "relu"
+    optimizer: "adam"
+    loss: "mse"
+    metrics: ["mae"]
+    epochs: 50
+    batch_size: 32
+    validation_split: 0.2
   lstm: {}
   lstm_cnn_hybrid: {}

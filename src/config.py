@@ -35,6 +35,7 @@ class PathsConfig:
     preprocessors_dir: Path
     reports_dir: Path
     figures_dir: Path
+    metrics_dir: Path
     raw_csv: Path
     cancelled_diverted_monthly: Path
     flights_nocancel: Path
@@ -57,6 +58,9 @@ class PathsConfig:
     airport_encoder: Path
     standard_scaler: Path
     minmax_scaler: Path
+    xgb_baseline_model: Path
+    ann_baseline_model: Path
+    baseline_metrics_json: Path
 
 
 @dataclass(frozen=True)
@@ -104,6 +108,7 @@ def load_config(config_path: Path | str = DEFAULT_CONFIG_PATH) -> Config:
         preprocessors_dir=_resolve(repo_root, raw_paths["preprocessors_dir"]),
         reports_dir=_resolve(repo_root, raw_paths["reports_dir"]),
         figures_dir=_resolve(repo_root, raw_paths["figures_dir"]),
+        metrics_dir=_resolve(repo_root, raw_paths["metrics_dir"]),
         raw_csv=_resolve(repo_root, raw_paths["raw_csv"]),
         cancelled_diverted_monthly=_resolve(repo_root, raw_paths["cancelled_diverted_monthly"]),
         flights_nocancel=_resolve(repo_root, raw_paths["flights_nocancel"]),
@@ -126,6 +131,9 @@ def load_config(config_path: Path | str = DEFAULT_CONFIG_PATH) -> Config:
         airport_encoder=_resolve(repo_root, raw_paths["airport_encoder"]),
         standard_scaler=_resolve(repo_root, raw_paths["standard_scaler"]),
         minmax_scaler=_resolve(repo_root, raw_paths["minmax_scaler"]),
+        xgb_baseline_model=_resolve(repo_root, raw_paths["xgb_baseline_model"]),
+        ann_baseline_model=_resolve(repo_root, raw_paths["ann_baseline_model"]),
+        baseline_metrics_json=_resolve(repo_root, raw_paths["baseline_metrics_json"]),
     )
 
     config = Config(

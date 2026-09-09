@@ -37,6 +37,9 @@ models/*
 reports/figures/*
 !reports/figures/.gitkeep
 
+reports/metrics/*
+!reports/metrics/.gitkeep
+
 # Test / tool caches
 .pytest_cache/
 .mypy_cache/
