@@ -13,6 +13,7 @@ paths:
   data_interim_dir: "data/interim"
   data_processed_dir: "data/processed"
   models_dir: "models"
+  preprocessors_dir: "models/preprocessors"
   reports_dir: "reports"
   figures_dir: "reports/figures"
 
@@ -22,6 +23,30 @@ paths:
   clean_parquet: "data/processed/flights_clean.parquet"
   cleaning_summary_md: "reports/cleaning_summary.md"
   eda_findings_md: "reports/eda_findings.md"
+
+  # Phase 4: label-encoded + Z-scaled X/Y (train/test)
+  x_train_label: "data/processed/X_train_label.parquet"
+  x_test_label: "data/processed/X_test_label.parquet"
+  y_train: "data/processed/Y_train.parquet"
+  y_test: "data/processed/Y_test.parquet"
+  arr_delay_y_train: "data/processed/arr_delay_only_y_train.parquet"
+  arr_delay_y_test: "data/processed/arr_delay_only_y_test.parquet"
+
+  # Phase 4: one-hot + MinMax-normalized X (train/test)
+  x_train_onehot_norm: "data/processed/X_train_onehot_norm.parquet"
+  x_test_onehot_norm: "data/processed/X_test_onehot_norm.parquet"
+
+  # Phase 4: chronological (shuffle=False) sequence data for LSTM models
+  x_train_lstm: "data/processed/X_train_lstm.parquet"
+  x_test_lstm: "data/processed/X_test_lstm.parquet"
+  y_train_lstm: "data/processed/Y_train_lstm.parquet"
+  y_test_lstm: "data/processed/Y_test_lstm.parquet"
+
+  # Phase 4: fitted encoders/scalers
+  airline_encoder: "models/preprocessors/airline_encoder.joblib"
+  airport_encoder: "models/preprocessors/airport_encoder.joblib"
+  standard_scaler: "models/preprocessors/standard_scaler.joblib"
+  minmax_scaler: "models/preprocessors/minmax_scaler.joblib"
 
 split:
   test_size: 0.25

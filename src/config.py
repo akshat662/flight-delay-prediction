@@ -32,6 +32,7 @@ class PathsConfig:
     data_interim_dir: Path
     data_processed_dir: Path
     models_dir: Path
+    preprocessors_dir: Path
     reports_dir: Path
     figures_dir: Path
     raw_csv: Path
@@ -40,6 +41,22 @@ class PathsConfig:
     clean_parquet: Path
     cleaning_summary_md: Path
     eda_findings_md: Path
+    x_train_label: Path
+    x_test_label: Path
+    y_train: Path
+    y_test: Path
+    arr_delay_y_train: Path
+    arr_delay_y_test: Path
+    x_train_onehot_norm: Path
+    x_test_onehot_norm: Path
+    x_train_lstm: Path
+    x_test_lstm: Path
+    y_train_lstm: Path
+    y_test_lstm: Path
+    airline_encoder: Path
+    airport_encoder: Path
+    standard_scaler: Path
+    minmax_scaler: Path
 
 
 @dataclass(frozen=True)
@@ -84,6 +101,7 @@ def load_config(config_path: Path | str = DEFAULT_CONFIG_PATH) -> Config:
         data_interim_dir=_resolve(repo_root, raw_paths["data_interim_dir"]),
         data_processed_dir=_resolve(repo_root, raw_paths["data_processed_dir"]),
         models_dir=_resolve(repo_root, raw_paths["models_dir"]),
+        preprocessors_dir=_resolve(repo_root, raw_paths["preprocessors_dir"]),
         reports_dir=_resolve(repo_root, raw_paths["reports_dir"]),
         figures_dir=_resolve(repo_root, raw_paths["figures_dir"]),
         raw_csv=_resolve(repo_root, raw_paths["raw_csv"]),
@@ -92,6 +110,22 @@ def load_config(config_path: Path | str = DEFAULT_CONFIG_PATH) -> Config:
         clean_parquet=_resolve(repo_root, raw_paths["clean_parquet"]),
         cleaning_summary_md=_resolve(repo_root, raw_paths["cleaning_summary_md"]),
         eda_findings_md=_resolve(repo_root, raw_paths["eda_findings_md"]),
+        x_train_label=_resolve(repo_root, raw_paths["x_train_label"]),
+        x_test_label=_resolve(repo_root, raw_paths["x_test_label"]),
+        y_train=_resolve(repo_root, raw_paths["y_train"]),
+        y_test=_resolve(repo_root, raw_paths["y_test"]),
+        arr_delay_y_train=_resolve(repo_root, raw_paths["arr_delay_y_train"]),
+        arr_delay_y_test=_resolve(repo_root, raw_paths["arr_delay_y_test"]),
+        x_train_onehot_norm=_resolve(repo_root, raw_paths["x_train_onehot_norm"]),
+        x_test_onehot_norm=_resolve(repo_root, raw_paths["x_test_onehot_norm"]),
+        x_train_lstm=_resolve(repo_root, raw_paths["x_train_lstm"]),
+        x_test_lstm=_resolve(repo_root, raw_paths["x_test_lstm"]),
+        y_train_lstm=_resolve(repo_root, raw_paths["y_train_lstm"]),
+        y_test_lstm=_resolve(repo_root, raw_paths["y_test_lstm"]),
+        airline_encoder=_resolve(repo_root, raw_paths["airline_encoder"]),
+        airport_encoder=_resolve(repo_root, raw_paths["airport_encoder"]),
+        standard_scaler=_resolve(repo_root, raw_paths["standard_scaler"]),
+        minmax_scaler=_resolve(repo_root, raw_paths["minmax_scaler"]),
     )
 
     config = Config(
