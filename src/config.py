@@ -66,6 +66,7 @@ class PathsConfig:
     sequence_metrics_json: Path
     results_md: Path
     final_comparison_csv: Path
+    rescheduling_results_csv: Path
 
 
 @dataclass(frozen=True)
@@ -90,6 +91,7 @@ class Config:
     features: list[str] = field(default_factory=list)
     exclusion_flags: list[str] = field(default_factory=list)
     models: dict[str, Any] = field(default_factory=dict)
+    scheduling: dict[str, Any] = field(default_factory=dict)
     repo_root: Path = REPO_ROOT
 
 
@@ -144,6 +146,7 @@ def load_config(config_path: Path | str = DEFAULT_CONFIG_PATH) -> Config:
         sequence_metrics_json=_resolve(repo_root, raw_paths["sequence_metrics_json"]),
         results_md=_resolve(repo_root, raw_paths["results_md"]),
         final_comparison_csv=_resolve(repo_root, raw_paths["final_comparison_csv"]),
+        rescheduling_results_csv=_resolve(repo_root, raw_paths["rescheduling_results_csv"]),
     )
 
     config = Config(
@@ -157,6 +160,7 @@ def load_config(config_path: Path | str = DEFAULT_CONFIG_PATH) -> Config:
         features=list(raw.get("features", [])),
         exclusion_flags=list(raw.get("exclusion_flags", [])),
         models=dict(raw.get("models", {})),
+        scheduling=dict(raw.get("scheduling", {})),
         repo_root=repo_root,
     )
     logger.debug("Loaded config from %s", config_path)

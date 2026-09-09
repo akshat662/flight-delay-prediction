@@ -63,6 +63,9 @@ paths:
   results_md: "reports/results.md"
   final_comparison_csv: "reports/metrics/final_comparison.csv"
 
+  # Phase 8: rescheduling
+  rescheduling_results_csv: "reports/rescheduling_results.csv"
+
 split:
   test_size: 0.25
 
@@ -145,3 +148,14 @@ models:
     batch_size: 512
     validation_split: 0.2
     early_stopping_patience: 5
+
+scheduling:
+  genetic:
+    target_date: "2023-08-31"
+    population_size: 50
+    num_generations: 100
+    mutation_rate: 0.1
+    tournament_size: 5
+    init_perturbation: 30
+    mutation_perturbation: 63
+    time_bounds: [0, 2359]

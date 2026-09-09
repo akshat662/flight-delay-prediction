@@ -114,7 +114,7 @@ def evaluate_own_split(models: dict, config: Config) -> dict:
     return {"random": floor_random, "chronological": floor_chrono, "models": results}
 
 
-def _retrain_xgb_on_chrono(X_train, Y_train, config: Config) -> XGBRegressor:
+def retrain_xgb_on_chronological_split(X_train, Y_train, config: Config) -> XGBRegressor:
     xgb_params = dict(config.models.get("xgboost", {}))
     model = XGBRegressor(random_state=config.seed, **xgb_params)
     model.fit(X_train, Y_train)
@@ -142,7 +142,7 @@ def evaluate_unified_chronological(config: Config) -> dict:
     floor = mean_predictor_floor(Y_train, Y_test, TARGET_COLS)
 
     logger.info("Retraining XGBoost on the chronological split (same hyperparameters as Phase 5)")
-    xgb_chrono = _retrain_xgb_on_chrono(X_train, Y_train, config)
+    xgb_chrono = retrain_xgb_on_chronological_split(X_train, Y_train, config)
 
     logger.info("Retraining ANN on the chronological split (same hyperparameters as Phase 5)")
     ann_chrono = _retrain_ann_on_chrono(X_train, Y_train, config)
