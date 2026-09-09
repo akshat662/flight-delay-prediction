@@ -16,6 +16,11 @@ for US domestic flights, using historical BTS data — and to honestly report
 how well that works, which (see Findings) turns out to be "a little, not a
 lot."
 
+Carrier delays are the most common cause among delayed flights, followed by
+late-aircraft delays; security delays are rare:
+
+![Departure delay reasons](docs/images/bar_departure_delay_reasons.png)
+
 ## Dataset
 
 [`patrickzel/flight-delay-and-cancellation-dataset-2019-2023`](https://www.kaggle.com/datasets/patrickzel/flight-delay-and-cancellation-dataset-2019-2023)
@@ -27,6 +32,11 @@ actual `FL_DATE` range in the downloaded file is **2019-01-01 to
 2023-08-31** — the full 2019 calendar year is present, not just its last
 five months. Every date-range statement elsewhere in this README uses the
 real range.
+
+Departure delays are also seasonal — Summer accounts for roughly a third
+of delayed flights, about double Fall's share:
+
+![Departure delays by season](docs/images/pie_departure_delays_by_season.png)
 
 ## Pipeline
 
@@ -46,6 +56,7 @@ flowchart TD
 
 ```
 configs/config.yaml       All configuration: paths, seed, targets, features, hyperparameters
+docs/images/               Curated, tracked figures embedded in this README (not gitignored)
 data/
   raw/                     Downloaded source CSV (gitignored)
   interim/                 Intermediate artifacts (gitignored)
@@ -128,7 +139,7 @@ prediction-variance check are in [`reports/results.md`](reports/results.md);
 the source data is in
 [`reports/metrics/final_comparison.csv`](reports/metrics/final_comparison.csv).
 
-![Per-component MAE by model](reports/figures/mae_by_model_grouped_bar.png)
+![Per-component MAE by model](docs/images/mae_by_model_grouped_bar.png)
 
 ## Findings
 
@@ -239,13 +250,14 @@ frame, so its `CRS_DEP_TIME` column is the untouched original.
 
 **Result**: optimizing the day's schedule reduces model-predicted total
 delay from **15,765.90 to 15,227.05 minutes — a 3.42% improvement.** That's
-real (the convergence plot in `reports/figures/ga_convergence.png` shows
-steady, non-trivial improvement across 100 generations, not noise) but
-modest, consistent with Phase 3's finding that every feature correlates
-with delay below r=0.08: there's little schedule-sensitive signal in the
-model for the GA to exploit, so a large win was never on the table. Full
-per-flight output is in
+real (the convergence plot below shows steady, non-trivial improvement
+across 100 generations, not noise) but modest, consistent with Phase 3's
+finding that every feature correlates with delay below r=0.08: there's
+little schedule-sensitive signal in the model for the GA to exploit, so a
+large win was never on the table. Full per-flight output is in
 [`reports/rescheduling_results.csv`](reports/rescheduling_results.csv).
+
+![GA convergence: best fitness per generation](docs/images/ga_convergence.png)
 
 ### Is the improvement schedulable, or model extrapolation?
 

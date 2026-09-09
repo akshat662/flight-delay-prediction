@@ -40,6 +40,12 @@ reports/figures/*
 reports/metrics/*
 !reports/metrics/.gitkeep
 
+# docs/images/ is a curated, tracked subset of figures for display in
+# README.md -- not a second generated-output directory like reports/figures/.
+!docs/
+!docs/images/
+!docs/images/*
+
 # Test / tool caches
 .pytest_cache/
 .mypy_cache/
