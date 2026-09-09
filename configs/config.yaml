@@ -1,0 +1,71 @@
+# Flight Delay Prediction — project configuration
+# All paths are resolved relative to the repository root by src/config.py.
+# No module should hardcode paths — read them from here via load_config().
+
+seed: 42
+
+dataset:
+  kaggle_slug: "patrickzel/flight-delay-and-cancellation-dataset-2019-2023"
+  filename: "flights_sample_3m.csv"
+
+paths:
+  data_raw_dir: "data/raw"
+  data_interim_dir: "data/interim"
+  data_processed_dir: "data/processed"
+  models_dir: "models"
+  reports_dir: "reports"
+  figures_dir: "reports/figures"
+
+  raw_csv: "data/raw/flights_sample_3m.csv"
+  cancelled_diverted_monthly: "data/interim/cancelled_diverted_monthly.parquet"
+  clean_parquet: "data/processed/flights_clean.parquet"
+  cleaning_summary_md: "reports/cleaning_summary.md"
+
+split:
+  test_size: 0.25
+
+cleaning:
+  iqr_multiplier: 1.5
+
+targets:
+  - DELAY_DUE_CARRIER
+  - DELAY_DUE_WEATHER
+  - DELAY_DUE_NAS
+  - DELAY_DUE_SECURITY
+  - DELAY_DUE_LATE_AIRCRAFT
+
+# Overall arrival delay column, kept separate from the five component targets above.
+arrival_delay_col: "ARR_DELAY"
+
+features:
+  # Candidate predictor columns carried forward from the original notebook analysis.
+  # Phase 3/4 will trim and engineer this list; kept here as the single source of truth.
+  - FL_DATE
+  - AIRLINE
+  - AIRLINE_CODE
+  - ORIGIN
+  - DEST
+  - CRS_DEP_TIME
+  - DEP_TIME
+  - DEP_DELAY
+  - CRS_ARR_TIME
+  - ARR_TIME
+  - CRS_ELAPSED_TIME
+  - ELAPSED_TIME
+  - AIR_TIME
+  - DISTANCE
+
+# Columns that mark a flight as out of scope for this project (dropped in cleaning).
+exclusion_flags:
+  - CANCELLED
+  - DIVERTED
+
+# ---------------------------------------------------------------------------
+# Model hyperparameters — populated in later phases. Left as empty, named
+# blocks now so config.py's schema does not need to change when they fill in.
+# ---------------------------------------------------------------------------
+models:
+  xgboost: {}
+  ann: {}
+  lstm: {}
+  lstm_cnn_hybrid: {}
