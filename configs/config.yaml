@@ -54,6 +54,11 @@ paths:
   ann_baseline_model: "models/ann_baseline.keras"
   baseline_metrics_json: "reports/metrics/baseline_metrics.json"
 
+  # Phase 6: sequence models and metrics
+  lstm_model: "models/lstm_model.keras"
+  hybrid_model: "models/hybrid_model.keras"
+  sequence_metrics_json: "reports/metrics/sequence_metrics.json"
+
 split:
   test_size: 0.25
 
@@ -109,5 +114,30 @@ models:
     epochs: 50
     batch_size: 32
     validation_split: 0.2
-  lstm: {}
-  lstm_cnn_hybrid: {}
+  lstm:
+    units: 64
+    activation: "relu"
+    recurrent_dropout: 0.2
+    learning_rate: 0.001
+    loss: "mse"
+    metrics: ["mae"]
+    epochs: 50
+    batch_size: 265
+    validation_split: 0.2
+    early_stopping_patience: 5
+  lstm_cnn_hybrid:
+    conv_filters: 32
+    kernel_size: 3
+    conv_activation: "relu"
+    pool_size: 2
+    dense_cnn_units: 32
+    lstm_units: 64
+    lstm_activation: "relu"
+    dense_lstm_units: 32
+    optimizer: "adam"
+    loss: "mse"
+    metrics: ["mae"]
+    epochs: 50
+    batch_size: 512
+    validation_split: 0.2
+    early_stopping_patience: 5

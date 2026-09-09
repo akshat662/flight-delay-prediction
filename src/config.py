@@ -61,6 +61,9 @@ class PathsConfig:
     xgb_baseline_model: Path
     ann_baseline_model: Path
     baseline_metrics_json: Path
+    lstm_model: Path
+    hybrid_model: Path
+    sequence_metrics_json: Path
 
 
 @dataclass(frozen=True)
@@ -134,6 +137,9 @@ def load_config(config_path: Path | str = DEFAULT_CONFIG_PATH) -> Config:
         xgb_baseline_model=_resolve(repo_root, raw_paths["xgb_baseline_model"]),
         ann_baseline_model=_resolve(repo_root, raw_paths["ann_baseline_model"]),
         baseline_metrics_json=_resolve(repo_root, raw_paths["baseline_metrics_json"]),
+        lstm_model=_resolve(repo_root, raw_paths["lstm_model"]),
+        hybrid_model=_resolve(repo_root, raw_paths["hybrid_model"]),
+        sequence_metrics_json=_resolve(repo_root, raw_paths["sequence_metrics_json"]),
     )
 
     config = Config(
